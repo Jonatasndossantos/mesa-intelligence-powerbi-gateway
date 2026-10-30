@@ -1,0 +1,14 @@
+# Dados temporários de extração
+scripts/*.json
+*.json.tmp
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs e Sistema
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
