@@ -4,6 +4,7 @@
 [![Custo Mensal](https://img.shields.io/badge/Custo%20de%20Infra-R%24%200%20(Pro)-blue.svg?style=flat-square)]()
 [![Power BI](https://img.shields.io/badge/Power%20BI-Desktop%20%2F%20Gateway-yellow.svg?style=flat-square)]()
 [![Tecnologias](https://img.shields.io/badge/Stack-DAX%20%7C%20PowerShell%20%7C%20Python%20%7C%20HTML5-informational.svg?style=flat-square)]()
+[![Acessar Dashboard Online](https://img.shields.io/badge/🌐%20Acessar%20Dashboard%20Online-GitHub%20Pages-brightgreen.svg?style=for-the-badge)](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/)
 
 Projeto de inteligência gerencial e consolidação financeira para restaurantes da **Consultoria MESA**. Conecta diretamente ao banco de dados dos clientes (**Garçom Web - MySQL/ODBC**) através do **Microsoft On-premises Data Gateway**, alimentando um painel executivo interativo de alta fidelidade.
 
