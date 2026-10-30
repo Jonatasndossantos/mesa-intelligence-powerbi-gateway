@@ -23,21 +23,21 @@ Para atender ao plano de testes da consultoria sem investimento inicial em infra
 
 ```mermaid
 flowchart TD
-    GW["MySQL do Restaurante\n(Garçom Web)"] -->|Gateway On-premises| PBI_Service["Power BI Pro Service (Nuvem)"]
-    GW -->|Gateway / Atualização Local| PBI_Desktop["Power BI Desktop (Local)"]
+    GW["MySQL do Restaurante<br>(Garçom Web)"] -->|"Gateway On-premises"| PBI_Service["Power BI Pro Service (Nuvem)"]
+    GW -->|"Gateway / Atualização Local"| PBI_Desktop["Power BI Desktop (Local)"]
 
     subgraph OP2["OPÇÃO 2 · Extração Local 1-Clique (IMPLEMENTADA)"]
-        PBI_Desktop -->|DAX Query local via ADOMD| ExtratorLocal["PowerShell + Python Engine"]
-        ExtratorLocal -->|Injeção cirúrgica de dados| HTML_Live["MESA_Intelligence_Live.html\n(Dashboard Interativo)"]
+        PBI_Desktop -->|"DAX Query local via ADOMD"| ExtratorLocal["PowerShell + Python Engine"]
+        ExtratorLocal -->|"Injeção cirúrgica de dados"| HTML_Live["MESA_Intelligence_Live.html<br>(Dashboard Interativo)"]
     end
 
     subgraph OP1["OPÇÃO 1 · Automação Cloud (Power BI REST API)"]
-        PBI_Service -->|API executeQueries (DAX)| ExtratorCloud["Script Python / Rotina Noturna"]
-        ExtratorCloud -->|Gera HTML por cliente| HTML_Cloud["Dashboard Web Automatizado"]
+        PBI_Service -->|"API executeQueries (DAX)"| ExtratorCloud["Script Python / Rotina Noturna"]
+        ExtratorCloud -->|"Gera HTML por cliente"| HTML_Cloud["Dashboard Web Automatizado"]
     end
 
     subgraph OP3["OPÇÃO 3 · Dashboard Único Nativo no Power BI"]
-        PBI_Desktop -->|Unificação de Modelos DAX| PBI_Report["Painel Consolidado no .pbix\n(Vendas + DRE + Caixa)"]
+        PBI_Desktop -->|"Unificação de Modelos DAX"| PBI_Report["Painel Consolidado no .pbix<br>(Vendas + DRE + Caixa)"]
     end
 ```
 

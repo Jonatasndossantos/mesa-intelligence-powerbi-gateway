@@ -206,6 +206,12 @@ def main():
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(final_html)
 
+    # Também grava index.html para deploy no GitHub Pages / Web
+    index_path = os.path.join(base_dir, "index.html")
+    print(f"Writing GitHub Pages entry point: {index_path}...")
+    with open(index_path, "w", encoding="utf-8") as f:
+        f.write(final_html)
+
     print(f"SUCCESS! File size: {len(final_html) / 1024 / 1024:.2f} MB")
 
 if __name__ == "__main__":
