@@ -17,7 +17,7 @@ copy /Y "%~dp0MESA_Intelligence_Live.html" "%USERPROFILE%\Documents\antigravity\
 
 echo.
 echo [2/3] Enviando atualizacao para o GitHub Pages...
-git add index.html MESA_Intelligence_Live.html > nul 2>&1
+git add index.html MESA_Intelligence_Live.html lojas > nul 2>&1
 git commit -m "chore: atualizacao de dados via Power BI Cloud API" > nul 2>&1
 git push origin HEAD:main > nul 2>&1
 if %ERRORLEVEL% EQU 0 (

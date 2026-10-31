@@ -26,7 +26,7 @@ copy /Y "%~dp0MESA_Intelligence_Live.html" "%USERPROFILE%\Documents\antigravity\
 
 echo.
 echo [3/4] Enviando atualizacao para o GitHub Pages...
-git add index.html MESA_Intelligence_Live.html > nul 2>&1
+git add index.html MESA_Intelligence_Live.html lojas > nul 2>&1
 git commit -m "chore: atualizacao automatica dos dados do dashboard" > nul 2>&1
 git push origin HEAD:main > nul 2>&1
 if %ERRORLEVEL% EQU 0 (

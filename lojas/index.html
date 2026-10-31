@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MESA Intelligence · Painéis Isolados por Cliente</title>
+    <style>
+        :root { --bg: #0b0f19; --card: #151d30; --accent: #2563eb; --text: #f8fafc; --sub: #94a3b8; --border: #1e293b; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 40px 20px; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+        p { color: var(--sub); font-size: 14px; margin-bottom: 30px; line-height: 1.5; }
+        .badge { background: #1e293b; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #38bdf8; }
+        .grid { display: flex; flex-direction: column; gap: 14px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: inherit; transition: all 0.2s; }
+        .card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); }
+        .card-info h3 { margin: 0 0 6px 0; font-size: 17px; }
+        .card-info span { color: var(--sub); font-size: 13px; }
+        .btn { background: var(--accent); color: white; padding: 9px 18px; border-radius: 8px; font-weight: 600; font-size: 13px; }
+        .footer { margin-top: 40px; text-align: center; font-size: 12px; color: var(--sub); }
+        .master-card { border: 1px solid #3b82f6; background: linear-gradient(135deg, #172554, #151d30); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="badge">CONSULTORIA MESA · PORTAL MULTI-TENANT</span>
+        <h1>🍽️ MESA Intelligence · Acesso por Cliente</h1>
+        <p>Selecione a loja piloto para acessar o dashboard interativo exclusivo com dados auditados do Garçom Web.</p>
+
+        <div class="grid">
+            <a href="../index.html" class="card master-card">
+                <div class="card-info">
+                    <h3>👑 Visão Consolidada (Master Consultoria)</h3>
+                    <span>Acesso com comparativo e todas as lojas ativas</span>
+                </div>
+                <div class="btn" style="background: #3b82f6;">Abrir Master &rarr;</div>
+            </a>
+
+            <a href="15173.html" class="card">
+                <div class="card-info">
+                    <h3>🏪 TEMPLO DO RAIMUNDAO</h3>
+                    <span>ID Loja: 15173 · Arquivo isolado (4.96 MB)</span>
+                </div>
+                <div class="btn">Abrir Painel &rarr;</div>
+            </a>
+
+            <a href="10603.html" class="card">
+                <div class="card-info">
+                    <h3>🏪 WORLD CAFE</h3>
+                    <span>ID Loja: 10603 · Arquivo isolado (6.18 MB)</span>
+                </div>
+                <div class="btn">Abrir Painel &rarr;</div>
+            </a>
+
+        </div>
+        <div class="footer">
+            MESA Intelligence · Alimentado via Microsoft On-premises Data Gateway & Power BI
+        </div>
+    </div>
+</body>
+</html>

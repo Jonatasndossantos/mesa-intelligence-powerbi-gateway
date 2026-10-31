@@ -68,34 +68,53 @@ A **Opção 2** foi implementada com foco em fricção zero para a equipe de con
 ### 📈 Métricas Reais Extraídas das Lojas Piloto
 
 No teste executado com os restaurantes **WORLD CAFE** e **TEMPLO DO RAIMUNDAO**, foram consolidados:
-
-* **2 Lojas Ativas:** Histórico unificado com alternância instantânea por filtro.
-* **118 Períodos Mensais:** Vendas líquidas, brutas, descontos, comandas válidas e taxas de serviço.
-* **33.713 Registros de Produtos:** Curva ABC e participação por grupos (Alimentos, Bebidas, etc.).
-* **2.000 Motivos de Exclusão:** Rastreamento de cancelamentos e perdas operacionais no PDV.
-* **5.000 Lançamentos Financeiros:** Detalhamento de contas a pagar, centros de custo e DRE.
-* **1.652 Fechamentos de Caixa:** Abertura por meio de pagamento (Cartões, Pix, Dinheiro).
-* **Arquivo Resultante:** `MESA_Intelligence_Live.html` (~8.2 MB autônomo, roda offline em qualquer navegador).
+* **Períodos:** 118 meses de histórico de vendas (R$ 15,7M acumulados)
+* **Produtos:** 33.713 registros de movimentação de itens e curva ABC
+* **Perdas:** 2.000 registros auditados de cancelamentos e motivos
+* **Financeiro / DRE:** 5.000 lançamentos de competência, caixas e centros de custo
+* **Formas de Pagamento:** 1.652 registros de fechamento de caixa por meio
 
 ---
 
-## 🚀 Como Executar
+## 🌐 Links Públicos e Acesso Multi-Tenant (GitHub Pages)
 
-### Pré-requisitos
-* Sistema Operacional: Windows 10/11
-* Power BI Desktop instalado e aberto com o relatório conectado ao Gateway
-* Python 3.8+ instalado
+Para permitir que a consultoria compartilhe o painel com segurança (onde um cliente **não** enxerga os dados do outro), o sistema gera visões isoladas automaticamente:
 
-### Execução em 1 Clique (Recomendado)
+| Painel | URL no GitHub Pages | Escopo de Dados | Tamanho |
+|---|---|---|---|
+| **👑 Visão Master (Consultoria MESA)** | [Acessar Painel Master](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/) | Todas as lojas consolidadas + comparativo | 8.2 MB |
+| **🚪 Portal Multi-Tenant** | [Acessar Portal de Lojas](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/lojas/) | Lista e links de todas as lojas piloto ativas | 4 KB |
+| **🏪 World Café (Loja 10603)** | [Acessar World Café](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/lojas/10603.html) | **100% exclusivo** (R$ 9,01M faturamento / zero dados de terceiros) | 6.1 MB |
+| **🏪 Templo do Raimundão (Loja 15173)** | [Acessar Raimundão](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/lojas/15173.html) | **100% exclusivo** (R$ 6,76M faturamento / zero dados de terceiros) | 4.9 MB |
+
+---
+
+## 🚀 Como Executar Localmente
+
+### Opção 2 · Extração Local 1-Clique (Recomendada para Diagnósticos)
 Dê um duplo clique no arquivo:
 ```cmd
 atualizar_dashboard.bat
 ```
 O script irá:
 1. Conectar-se automaticamente ao Power BI Desktop aberto.
-2. Extrair todas as tabelas em ~5 segundos.
-3. Injetar os dados no dashboard e salvar o arquivo `MESA_Intelligence_Live.html`.
-4. Abrir automaticamente a visualização atualizada no seu navegador padrão.
+2. Extrair todas as tabelas em ~5 segundos via ADOMD.NET.
+3. Injetar os dados no dashboard Master e gerar os arquivos isolados por cliente em `lojas/`.
+4. Realizar o commit e push automático para o GitHub Pages.
+5. Abrir a visualização atualizada no seu navegador padrão.
+
+### Opção 1 · Extração Nuvem (Power BI Service REST API)
+Para atualizar os dados diretamente da nuvem sem precisar abrir o Power BI Desktop:
+1. Na primeira vez, faça o login seguro via Microsoft Device Code:
+```cmd
+python scripts/pbi_cloud_api.py --login
+```
+2. Liste os datasets e workspaces disponíveis na sua conta Pro:
+```cmd
+python scripts/pbi_cloud_api.py --list
+```
+3. Preencha o `workspace_id` e `dataset_id` no arquivo `scripts/cloud_config.json`.
+4. Dê um duplo clique em `atualizar_nuvem.bat` para atualizar e republicar tudo automaticamente via nuvem!
 
 ---
 
@@ -103,14 +122,21 @@ O script irá:
 
 ```text
 powerbi_gateway_mysql_mvp/
-├── atualizar_dashboard.bat       # Executável de 1 clique para extração e abertura
-├── MESA_Intelligence_Live.html   # Dashboard executivo gerado com dados reais
+├── atualizar_dashboard.bat       # 1-clique para extração local (Power BI Desktop)
+├── atualizar_nuvem.bat           # 1-clique para extração cloud (Power BI Service REST API)
+├── index.html                    # Entrada do GitHub Pages (Visão Master Consolidada)
+├── MESA_Intelligence_Live.html   # Cópia local do Dashboard Master
 ├── README.md                     # Documentação técnica e arquitetural
-├── .gitignore                    # Filtro de dados temporários e caches
+├── .gitignore                    # Filtro de credenciais e caches
+├── lojas/                        # Módulo Multi-Tenant (Isolamento por Cliente)
+│   ├── index.html                # Portal de seleção de clientes
+│   ├── 10603.html                # Painel exclusivo World Café
+│   └── 15173.html                # Painel exclusivo Templo do Raimundão
 └── scripts/
     ├── exportar_dados_pbi.ps1    # Extrator DAX via ADOMD.NET (PowerShell)
-    ├── gerar_html_live.py        # Motor de formatação e injeção do JSON (Python)
-    └── build_extractor.py        # Utilitário de regeneração de scripts
+    ├── gerar_html_live.py        # Motor Multi-Tenant de injeção JSON (Python)
+    ├── pbi_cloud_api.py          # Conector Power BI Service REST API (OAuth2)
+    └── cloud_config.example.json # Modelo de configuração para a nuvem
 ```
 
 ---
@@ -118,9 +144,8 @@ powerbi_gateway_mysql_mvp/
 ## 🔮 Roteiro de Expansão (Próximas Fases)
 
 ### Ativação da Opção 1 (Automação Nuvem)
-* Registrar um aplicativo no Microsoft Entra ID (Azure AD) com permissão `Dataset.Read.All`.
-* Utilizar o endpoint `POST https://api.powerbi.com/v1.0/myorg/groups/{groupId}/datasets/{datasetId}/executeQueries` para executar as mesmas consultas DAX da Opção 2 diretamente na nuvem.
-* Configurar pipeline em GitHub Actions ou agendador local para gerar os dashboards por cliente toda madrugada após o refresh do Gateway.
+* Já implementada em `scripts/pbi_cloud_api.py` com suporte a OAuth2 RFC 8628 (Device Code).
+* Permite agendamentos em servidores locais ou GitHub Actions sem interface gráfica.
 
 ### Ativação da Opção 3 (Dashboard Nativo)
 * Modelar uma página executiva "MESA Master" dentro do próprio `.pbix`.

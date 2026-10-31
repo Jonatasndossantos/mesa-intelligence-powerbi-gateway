@@ -21,6 +21,30 @@ def get_loja_nome(r):
         str(get_idloja(r))
     )
 
+def apply_resilience(suffix):
+    """Torna o JavaScript do template resiliente para qualquer quantidade de lojas (1, 2 ou 10+)."""
+    suffix = suffix.replace(
+        "${LNOME[IDS[0]].split(' ')[0]} parado em ${RWH}; ${LNOME[IDS[1]].split(' ')[0]} em ${RTE}",
+        "${(LNOME[IDS[0]]||\"Loja\").split(\" \")[0]} parado em ${RWH}${IDS[1] ? \"; \" + (LNOME[IDS[1]]||\"Loja 2\").split(\" \")[0] + \" em \" + RTE : \"\"}"
+    )
+    suffix = suffix.replace(
+        "PEND=D.concil.filter(r=>String(r.idloja)===IDS[1])",
+        "PEND=D.concil.filter(r=>IDS[1] ? String(r.idloja)===IDS[1] : String(r.idloja)===IDS[0])"
+    )
+    suffix = suffix.replace(
+        "B=derive(aggRange([IDS[1]],w,'venc'))",
+        "B=derive(aggRange([IDS[1]||IDS[0]],w,'venc'))"
+    )
+    return suffix
+
+def build_html_for_dataset(base_data, prefix, suffix, output_path):
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    new_data_str = json.dumps(base_data, ensure_ascii=False)
+    final_html = prefix + new_data_str + suffix
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(final_html)
+    return len(final_html)
+
 def main():
     base_dir = os.path.dirname(os.path.dirname(__file__))
     scripts_dir = os.path.join(base_dir, "scripts")
@@ -43,7 +67,8 @@ def main():
         lid = str(get_idloja(r))
         nome = get_loja_nome(r)
         lojas[lid] = nome
-        ordem_lojas.append(lid)
+        if lid not in ordem_lojas:
+            ordem_lojas.append(lid)
 
     # 2. Vendas
     vendas = []
@@ -175,44 +200,116 @@ def main():
     decoder = json.JSONDecoder()
     base_data, end_idx = decoder.raw_decode(html[idx + len("const DATA="):])
 
-    # Update with live data
-    base_data["meta"] = meta
-    base_data["vendas"] = vendas
-    base_data["produtos"] = produtos
-    base_data["grupos"] = grupos
-    base_data["horas"] = horas
-    base_data["excl"] = excl
-    base_data["dre_lanc"] = dre_lanc
-    base_data["fech_meio"] = fech_meio
-
-    print("Injected live tables:")
-    print(f"  - lojas: {len(lojas)} ({list(lojas.values())})")
-    print(f"  - vendas: {len(vendas)} rows")
-    print(f"  - produtos: {len(produtos)} rows")
-    print(f"  - grupos: {len(grupos)} rows")
-    print(f"  - horas: {len(horas)} rows")
-    print(f"  - excl: {len(excl)} rows")
-    print(f"  - dre_lanc: {len(dre_lanc)} rows")
-    print(f"  - fech_meio: {len(fech_meio)} rows")
-
-    # Serialize
-    new_data_str = json.dumps(base_data, ensure_ascii=False)
-
     prefix = html[:idx + len("const DATA=")]
-    suffix = html[idx + len("const DATA=") + end_idx:]
-    final_html = prefix + new_data_str + suffix
+    raw_suffix = html[idx + len("const DATA=") + end_idx:]
+    suffix = apply_resilience(raw_suffix)
 
-    print(f"Writing final HTML to: {output_path}...")
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(final_html)
+    # 1. Update Master dataset (todas as lojas consolidadas)
+    master_data = dict(base_data)
+    master_data["meta"] = meta
+    master_data["vendas"] = vendas
+    master_data["produtos"] = produtos
+    master_data["grupos"] = grupos
+    master_data["horas"] = horas
+    master_data["excl"] = excl
+    master_data["dre_lanc"] = dre_lanc
+    master_data["fech_meio"] = fech_meio
 
-    # Também grava index.html para deploy no GitHub Pages / Web
+    # Escreve MESA_Intelligence_Live.html e index.html
+    sz1 = build_html_for_dataset(master_data, prefix, suffix, output_path)
     index_path = os.path.join(base_dir, "index.html")
-    print(f"Writing GitHub Pages entry point: {index_path}...")
-    with open(index_path, "w", encoding="utf-8") as f:
-        f.write(final_html)
+    sz2 = build_html_for_dataset(master_data, prefix, suffix, index_path)
+    print(f"SUCCESS! Master dashboard: {output_path} ({sz1 / 1024 / 1024:.2f} MB)")
+    print(f"SUCCESS! GitHub Pages index: {index_path} ({sz2 / 1024 / 1024:.2f} MB)")
 
-    print(f"SUCCESS! File size: {len(final_html) / 1024 / 1024:.2f} MB")
+    # 2. Multi-tenant: Gera arquivos individuais isolados para cada loja em lojas/<idloja>.html
+    lojas_dir = os.path.join(base_dir, "lojas")
+    os.makedirs(lojas_dir, exist_ok=True)
+    portal_links = []
+
+    for lid, nome in lojas.items():
+        lid_int = int(lid)
+        loja_meta = dict(meta)
+        loja_meta["lojas"] = {lid: nome}
+        loja_meta["ordem"] = [lid]
+
+        loja_data = dict(base_data)
+        loja_data["meta"] = loja_meta
+        loja_data["vendas"] = [r for r in vendas if r["idloja"] == lid_int]
+        loja_data["produtos"] = [r for r in produtos if r["idloja"] == lid_int]
+        loja_data["grupos"] = [r for r in grupos if r["idloja"] == lid_int]
+        loja_data["horas"] = [r for r in horas if r["idloja"] == lid_int]
+        loja_data["excl"] = [r for r in excl if r["idloja"] == lid_int]
+        loja_data["dre_lanc"] = [r for r in dre_lanc if r["idloja"] == lid_int]
+        loja_data["fech_meio"] = [r for r in fech_meio if r["idloja"] == lid_int]
+
+        # Salva o arquivo individual
+        loja_file = os.path.join(lojas_dir, f"{lid}.html")
+        sz = build_html_for_dataset(loja_data, prefix, suffix, loja_file)
+        print(f"  -> Gerado painel isolado da Loja {lid} ({nome}): {loja_file} ({sz / 1024 / 1024:.2f} MB)")
+        portal_links.append({"id": lid, "nome": nome, "file": f"{lid}.html", "size_mb": round(sz / 1024 / 1024, 2)})
+
+    # 3. Gera um portal simples de navegação em lojas/index.html
+    portal_html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MESA Intelligence · Painéis Isolados por Cliente</title>
+    <style>
+        :root {{ --bg: #0b0f19; --card: #151d30; --accent: #2563eb; --text: #f8fafc; --sub: #94a3b8; --border: #1e293b; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 40px 20px; margin: 0; }}
+        .container {{ max-width: 800px; margin: 0 auto; }}
+        h1 {{ font-size: 26px; font-weight: 700; margin-bottom: 8px; }}
+        p {{ color: var(--sub); font-size: 14px; margin-bottom: 30px; line-height: 1.5; }}
+        .badge {{ background: #1e293b; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #38bdf8; }}
+        .grid {{ display: flex; flex-direction: column; gap: 14px; }}
+        .card {{ background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: inherit; transition: all 0.2s; }}
+        .card:hover {{ border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); }}
+        .card-info h3 {{ margin: 0 0 6px 0; font-size: 17px; }}
+        .card-info span {{ color: var(--sub); font-size: 13px; }}
+        .btn {{ background: var(--accent); color: white; padding: 9px 18px; border-radius: 8px; font-weight: 600; font-size: 13px; }}
+        .footer {{ margin-top: 40px; text-align: center; font-size: 12px; color: var(--sub); }}
+        .master-card {{ border: 1px solid #3b82f6; background: linear-gradient(135deg, #172554, #151d30); }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="badge">CONSULTORIA MESA · PORTAL MULTI-TENANT</span>
+        <h1>🍽️ MESA Intelligence · Acesso por Cliente</h1>
+        <p>Selecione a loja piloto para acessar o dashboard interativo exclusivo com dados auditados do Garçom Web.</p>
+
+        <div class="grid">
+            <a href="../index.html" class="card master-card">
+                <div class="card-info">
+                    <h3>👑 Visão Consolidada (Master Consultoria)</h3>
+                    <span>Acesso com comparativo e todas as lojas ativas</span>
+                </div>
+                <div class="btn" style="background: #3b82f6;">Abrir Master &rarr;</div>
+            </a>
+"""
+    for p in portal_links:
+        portal_html += f"""
+            <a href="{p['file']}" class="card">
+                <div class="card-info">
+                    <h3>🏪 {p['nome']}</h3>
+                    <span>ID Loja: {p['id']} · Arquivo isolado ({p['size_mb']} MB)</span>
+                </div>
+                <div class="btn">Abrir Painel &rarr;</div>
+            </a>
+"""
+    portal_html += """
+        </div>
+        <div class="footer">
+            MESA Intelligence · Alimentado via Microsoft On-premises Data Gateway & Power BI
+        </div>
+    </div>
+</body>
+</html>
+"""
+    with open(os.path.join(lojas_dir, "index.html"), "w", encoding="utf-8") as f:
+        f.write(portal_html)
+    print(f"SUCCESS! Multi-tenant portal generated at {os.path.join(lojas_dir, 'index.html')}")
 
 if __name__ == "__main__":
     main()
