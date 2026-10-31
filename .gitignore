@@ -1,6 +1,10 @@
-# Dados temporários de extração
+# Dados temporários de extração e credenciais
 scripts/*.json
+!scripts/cloud_config.example.json
 *.json.tmp
+*.token
+*.env
+.pbi_token.json
 
 # Python cache
 __pycache__/
