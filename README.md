@@ -1,156 +1,120 @@
-# 🍽️ MESA Intelligence · Integração Garçom Web via Power BI Gateway
+# 🍽️ MESA Intelligence · Conectividade Ao Vivo (Garçom Web Direct $\rightarrow$ Supabase $\rightarrow$ Web App Seguro)
 
-[![Status](https://img.shields.io/badge/Status-MVP%20Validado-success.svg?style=flat-square)]()
-[![Custo Mensal](https://img.shields.io/badge/Custo%20de%20Infra-R%24%200%20(Pro)-blue.svg?style=flat-square)]()
-[![Power BI](https://img.shields.io/badge/Power%20BI-Desktop%20%2F%20Gateway-yellow.svg?style=flat-square)]()
-[![Tecnologias](https://img.shields.io/badge/Stack-DAX%20%7C%20PowerShell%20%7C%20Python%20%7C%20HTML5-informational.svg?style=flat-square)]()
-[![Acessar Dashboard Online](https://img.shields.io/badge/🌐%20Acessar%20Dashboard%20Online-GitHub%20Pages-brightgreen.svg?style=for-the-badge)](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/)
+[![Status](https://img.shields.io/badge/Status-Arquitetura%20Supabase%20Realtime%20Pronta-success.svg?style=flat-square)]()
+[![Custo Mensal](https://img.shields.io/badge/Custo%20de%20Infra-R%24%200%20(Supabase%20Free)-10b981.svg?style=flat-square)]()
+[![Segurança](https://img.shields.io/badge/Segurança-Supabase%20Auth%20%2B%20PostgreSQL%20RLS-blue.svg?style=flat-square)]()
+[![Tempo Real](https://img.shields.io/badge/Realtime-WebSockets%20Ao%20Vivo-orange.svg?style=flat-square)]()
 
-Projeto de inteligência gerencial e consolidação financeira para restaurantes da **Consultoria MESA**. Conecta diretamente ao banco de dados dos clientes (**Garçom Web - MySQL/ODBC**) através do **Microsoft On-premises Data Gateway**, alimentando um painel executivo interativo de alta fidelidade.
+[![Abrir Web App Ao Vivo (Login + Supabase)](https://img.shields.io/badge/🔒%20Abrir%20Web%20App%20Seguro%20(Login%20%2B%20Ao%20Vivo)-Supabase%20Realtime-10b981.svg?style=for-the-badge)](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/app_ao_vivo.html)
+[![Acessar Snapshot Demo](https://img.shields.io/badge/🌐%20Acessar%20Painel%20Snapshot-GitHub%20Pages-3b82f6.svg?style=for-the-badge)](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/)
 
----
-
-## 📌 Contexto e Desafio de Arquitetura
-
-* **Escala:** ~1.200 clientes finais (piloto iniciado com 10 lojas selecionadas).
-* **Segurança e Rede:** Restaurantes possuem IP dinâmico e firewalls locais. O **On-premises Data Gateway** já instalado resolve o tunelamento seguro sem necessidade de portas abertas ou VPNs dedicadas.
-* **Licenciamento:** Operação viabilizada 100% sobre o **Power BI Pro** existente, eliminando os custos proibitivos de capacidades Microsoft Fabric (US$ 260+/mês) na fase de validação do MVP.
+Plataforma de inteligência gerencial e consolidação financeira em **tempo real** para restaurantes da **Consultoria MESA**. Conecta diretamente ao banco de dados local dos clientes (**Garçom Web - MySQL/ODBC**) na máquina do restaurante através do **MESA Sync Agent** e transmite ao vivo para o **Supabase (PostgreSQL + Auth + Row Level Security + Realtime WebSockets)**.
 
 ---
 
-## 🧭 Comparativo dos 3 Formatos Estratégicos
+## 🏗️ Arquitetura Fim-a-Fim (Cenário de Máquinas Separadas)
 
-Para atender ao plano de testes da consultoria sem investimento inicial em infraestrutura em nuvem, definimos 3 caminhos complementares:
+O banco de dados do **Garçom Web** roda fisicamente no computador local do restaurante (atrás de firewall/NAT/IP dinâmico), enquanto o site é acessado na nuvem por celulares e computadores de qualquer lugar:
 
 ```mermaid
-flowchart TD
-    GW["MySQL do Restaurante<br>(Garçom Web)"] -->|"Gateway On-premises"| PBI_Service["Power BI Pro Service (Nuvem)"]
-    GW -->|"Gateway / Atualização Local"| PBI_Desktop["Power BI Desktop (Local)"]
-
-    subgraph OP2["OPÇÃO 2 · Extração Local 1-Clique (IMPLEMENTADA)"]
-        PBI_Desktop -->|"DAX Query local via ADOMD"| ExtratorLocal["PowerShell + Python Engine"]
-        ExtratorLocal -->|"Injeção cirúrgica de dados"| HTML_Live["MESA_Intelligence_Live.html<br>(Dashboard Interativo)"]
+flowchart TB
+    subgraph Amb1["📍 AMBIENTE 1: Máquina do Restaurante (Outra Máquina)"]
+        GW_DB[("🗄️ MySQL / ODBC Local<br>(Garçom Web - Porta 3306)")]
+        SyncAgent["⚡ MESA Sync Agent<br>(mesa-sync-agent/agent_garcomweb.py)"]
+        GW_DB -->|"Leitura Local (SELECT)<br>A cada 10 segundos"| SyncAgent
     end
 
-    subgraph OP1["OPÇÃO 1 · Automação Cloud (Power BI REST API)"]
-        PBI_Service -->|"API executeQueries (DAX)"| ExtratorCloud["Script Python / Rotina Noturna"]
-        ExtratorCloud -->|"Gera HTML por cliente"| HTML_Cloud["Dashboard Web Automatizado"]
+    subgraph Amb2["☁️ AMBIENTE 2: Nuvem Central (Supabase Free Tier)"]
+        SupaAPI["🌐 API REST / HTTPS (Porta 443)"]
+        SupaAuth["🔐 Supabase Auth<br>(Login E-mail/Senha + JWT)"]
+        SupaDB[("🐘 PostgreSQL + RLS<br>(Isolamento Bancário por Loja)")]
+        SupaRT["📡 Supabase Realtime<br>(WebSockets Ao Vivo)"]
+
+        SupaAPI --> SupaDB
+        SupaDB --> SupaRT
     end
 
-    subgraph OP3["OPÇÃO 3 · Dashboard Único Nativo no Power BI"]
-        PBI_Desktop -->|"Unificação de Modelos DAX"| PBI_Report["Painel Consolidado no .pbix<br>(Vendas + DRE + Caixa)"]
+    subgraph Amb3["💻 AMBIENTE 3: Web App MESA Intelligence (~240 KB)"]
+        LoginUI["🔒 Tela de Login MESA"]
+        WebApp["📊 app_ao_vivo.html<br>(Zero dados no código-fonte)"]
+
+        LoginUI -->|"1. Autentica Usuário"| SupaAuth
+        SupaAuth -->|"2. Token JWT"| WebApp
+        SupaDB -->|"3. Entrega só Lojas Autorizadas (RLS)"| WebApp
+        SupaRT ===>|"4. Atualização Ao Vivo Sem F5!"| WebApp
     end
+
+    SyncAgent ===>|"Outbound Push HTTPS (Delta MD5)<br>Sem abrir portas no roteador"| SupaAPI
 ```
-
-### 📊 Matriz Comparativa
-
-| Critério | Opção 1: Nuvem Pro (REST API) | Opção 2: Local 1-Clique (Desktop DAX) ⚡ | Opção 3: Dashboard Único PBI |
-|---|---|---|---|
-| **Status** | Roteiro pronto para ativação | **✅ Implementado e Validado** | Em modelagem visual |
-| **Custo Mensal** | **R$ 0** (incluso no Power BI Pro) | **R$ 0** (incluso no Power BI Desktop) | **R$ 0** (incluso no Power BI Pro) |
-| **Interface de Entrega** | HTML MESA Intelligence (Web) | HTML MESA Intelligence (Web) | Relatório Nativo Power BI (.pbix) |
-| **Dependência Local** | Nenhuma (roda na nuvem) | Requer Power BI Desktop aberto | Requer Power BI Service ou App |
-| **Velocidade de Execução** | ~5 a 10s via API REST | **~3 a 8s via porta local** | Instantâneo ao abrir o relatório |
-| **Automação** | 100% autônomo (via cron/scheduler) | Manual (1 duplo-clique no `.bat`) | Automático via agendamento do Pro |
-| **Ideal para...** | Envio de relatórios em escala | **Reuniões de consultoria e diagnósticos rápidos** | Analistas que já operam no Power BI |
 
 ---
 
-## ⚡ Opção 2: Detalhes da Solução Implementada
+## 🛡️ Diferenciais de Segurança e Engenharia
 
-A **Opção 2** foi implementada com foco em fricção zero para a equipe de consultoria:
-
-1. **Auto-detecção de Instância:** O script local localiza o processo do Power BI Desktop (`PBIDesktop.exe`), descobre o processo filho do Analysis Services (`msmdsrv.exe`) e identifica dinamicamente a porta TCP ativa (ex: `50566`, `64009`), dispensando configurações manuais.
-2. **Conexão Nativa ADOMD.NET:** Utiliza a biblioteca oficial `Microsoft.PowerBI.AdomdClient.dll` para submeter consultas DAX ultrarrápidas diretamente contra a engine de dados em memória.
-3. **Resiliência a Schemas Dinâmicos:** As consultas utilizam agregações nativas sobre as tabelas acumuladas (`gw_vendas_acumulado`, `gw_caixa_detalha_acumulado`, `Financeiro`), imunes a variações regionais ou renomeações de colunas do calendário.
-4. **Injeção Cirúrgica no HTML:** O script Python substitui apenas o payload da variável `const DATA = { ... }` dentro do template da consultoria, mantendo 100% da reatividade, gráficos e regras de negócio da interface.
-
-### 📈 Métricas Reais Extraídas das Lojas Piloto
-
-No teste executado com os restaurantes **WORLD CAFE** e **TEMPLO DO RAIMUNDAO**, foram consolidados:
-* **Períodos:** 118 meses de histórico de vendas (R$ 15,7M acumulados)
-* **Produtos:** 33.713 registros de movimentação de itens e curva ABC
-* **Perdas:** 2.000 registros auditados de cancelamentos e motivos
-* **Financeiro / DRE:** 5.000 lançamentos de competência, caixas e centros de custo
-* **Formas de Pagamento:** 1.652 registros de fechamento de caixa por meio
+1. **Zero Dados no Código-Fonte (`app_ao_vivo.html`):**
+   - O arquivo da aplicação caiu de **8,28 MB** para apenas **241 KB**.
+   - Nenhum número de venda, produto ou DRE está presente no código HTML antes do login.
+2. **Isolamento Multi-Tenant via PostgreSQL RLS (`Row Level Security`):**
+   - A tabela `public.user_lojas` vincula cada e-mail de usuário às lojas permitidas (`10603`, `15173`, ou perfil `admin` da Consultoria MESA).
+   - O próprio motor do banco de dados bloqueia qualquer tentativa de leitura de lojas não autorizadas.
+3. **Atualização Ao Vivo (`Supabase Realtime`):**
+   - Quando uma comanda é fechada ou um item é cancelado no Garçom Web, o `MESA Sync Agent` detecta a diferença via Hash MD5 e faz `UPSERT` no Supabase.
+   - O navegador recebe o evento via WebSocket em milissegundos, reconstrói os índices em memória (`window.__refreshMesaRealtime()`) e atualiza os gráficos na hora, sem recarregar a página.
+4. **Suporte Híbrido no Restaurante (MySQL Direto + ODBC Windows):**
+   - O pacote portátil `mesa-sync-agent/` conecta tanto direto na porta `3306` do MySQL quanto via fonte de dados `ODBC` do Windows.
 
 ---
 
-## 🌐 Links Públicos e Acesso Multi-Tenant (GitHub Pages)
+## 🚀 Guia de Implantação em 3 Passos
 
-Para permitir que a consultoria compartilhe o painel com segurança (onde um cliente **não** enxerga os dados do outro), o sistema gera visões isoladas automaticamente:
+### Passo 1: Preparar o Banco no Supabase (2 minutos)
+Siga o guia detalhado em **[`supabase/GUIA_PASSO_A_PASSO_SUPABASE.md`](supabase/GUIA_PASSO_A_PASSO_SUPABASE.md)**:
+1. Crie um projeto gratuito em [supabase.com](https://supabase.com).
+2. No **SQL Editor**, cole e execute o script **[`supabase/01_schema_and_rls.sql`](supabase/01_schema_and_rls.sql)**.
+3. Crie seus usuários em **Authentication $\rightarrow$ Users** e vincule-os às lojas com:
+   ```sql
+   SELECT public.vincular_usuario_por_email('admin@mesa.com.br', NULL, 'admin');
+   SELECT public.vincular_usuario_por_email('worldcafe@cliente.com', 10603, 'cliente');
+   SELECT public.vincular_usuario_por_email('raimundao@cliente.com', 15173, 'cliente');
+   ```
 
-| Painel | URL no GitHub Pages | Escopo de Dados | Tamanho |
-|---|---|---|---|
-| **👑 Visão Master (Consultoria MESA)** | [Acessar Painel Master](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/) | Todas as lojas consolidadas + comparativo | 8.2 MB |
-| **🚪 Portal Multi-Tenant** | [Acessar Portal de Lojas](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/lojas/) | Lista e links de todas as lojas piloto ativas | 4 KB |
-| **🏪 World Café (Loja 10603)** | [Acessar World Café](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/lojas/10603.html) | **100% exclusivo** (R$ 9,01M faturamento / zero dados de terceiros) | 6.1 MB |
-| **🏪 Templo do Raimundão (Loja 15173)** | [Acessar Raimundão](https://jonatasndossantos.github.io/mesa-intelligence-powerbi-gateway/lojas/15173.html) | **100% exclusivo** (R$ 6,76M faturamento / zero dados de terceiros) | 4.9 MB |
+### Passo 2: Testar Hoje Mesmo Desta Máquina (Carga + Simulador Ao Vivo)
+Mesmo com o Garçom Web estando em outra máquina, você pode popular o Supabase agora mesmo com os dados reais já extraídos do **World Café** e **Templo do Raimundão**:
+1. Dê duplo clique em **`popular_supabase.bat`** (ele pedirá a `Project URL` e a `service_role key` do seu Supabase e subirá todas as lojas, vendas e módulos).
+2. Abra o **`app_ao_vivo.html`**, faça login com seu e-mail e senha.
+3. Dê duplo clique em **`simular_tempo_real.bat`** para simular novas comandas sendo fechadas a cada 5 segundos e veja os números mudando sozinhos na tela do navegador!
 
----
-
-## 🚀 Como Executar Localmente
-
-### Opção 2 · Extração Local 1-Clique (Recomendada para Diagnósticos)
-Dê um duplo clique no arquivo:
-```cmd
-atualizar_dashboard.bat
-```
-O script irá:
-1. Conectar-se automaticamente ao Power BI Desktop aberto.
-2. Extrair todas as tabelas em ~5 segundos via ADOMD.NET.
-3. Injetar os dados no dashboard Master e gerar os arquivos isolados por cliente em `lojas/`.
-4. Realizar o commit e push automático para o GitHub Pages.
-5. Abrir a visualização atualizada no seu navegador padrão.
-
-### Opção 1 · Extração Nuvem (Power BI Service REST API)
-Para atualizar os dados diretamente da nuvem sem precisar abrir o Power BI Desktop:
-1. Na primeira vez, faça o login seguro via Microsoft Device Code:
-```cmd
-python scripts/pbi_cloud_api.py --login
-```
-2. Liste os datasets e workspaces disponíveis na sua conta Pro:
-```cmd
-python scripts/pbi_cloud_api.py --list
-```
-3. Preencha o `workspace_id` e `dataset_id` no arquivo `scripts/cloud_config.json`.
-4. Dê um duplo clique em `atualizar_nuvem.bat` para atualizar e republicar tudo automaticamente via nuvem!
+### Passo 3: Levar o Kit Coletor para a Outra Máquina (Onde está o Garçom Web)
+Copie apenas a pasta **[`mesa-sync-agent/`](mesa-sync-agent/)** para o computador onde roda o Garçom Web:
+1. Na outra máquina, rode `instalar_dependencias.bat`.
+2. Edite o arquivo `config.env` com a senha do MySQL/ODBC local e a chave do Supabase.
+3. Rode `testar_conexao.bat` para diagnosticar as tabelas locais.
+4. Rode `iniciar_agente.bat` para iniciar a transmissão ao vivo!
 
 ---
 
-## 📂 Estrutura do Repositório
+## 📂 Estrutura Completa do Projeto
 
 ```text
-powerbi_gateway_mysql_mvp/
-├── atualizar_dashboard.bat       # 1-clique para extração local (Power BI Desktop)
-├── atualizar_nuvem.bat           # 1-clique para extração cloud (Power BI Service REST API)
-├── index.html                    # Entrada do GitHub Pages (Visão Master Consolidada)
-├── MESA_Intelligence_Live.html   # Cópia local do Dashboard Master
-├── README.md                     # Documentação técnica e arquitetural
-├── .gitignore                    # Filtro de credenciais e caches
-├── lojas/                        # Módulo Multi-Tenant (Isolamento por Cliente)
-│   ├── index.html                # Portal de seleção de clientes
-│   ├── 10603.html                # Painel exclusivo World Café
-│   └── 15173.html                # Painel exclusivo Templo do Raimundão
+mesa-intelligence/
+├── app_ao_vivo.html                  # 🔒 Web App Seguro (~241 KB) com Login + Supabase Realtime
+├── popular_supabase.bat              # 🚀 1-clique: Sobe base inicial para o Supabase
+├── simular_tempo_real.bat            # ⚡ 1-clique: Simula vendas ao vivo a cada 5s no Supabase
+├── supabase/
+│   ├── 01_schema_and_rls.sql         # Script SQL: Tabelas, Segurança RLS e Publicação Realtime
+│   └── GUIA_PASSO_A_PASSO_SUPABASE.md# Tutorial passo a passo de configuração do Supabase
+├── mesa-sync-agent/                  # 📦 KIT PORTÁTIL PARA LEVAR À MÁQUINA DO GARÇOM WEB
+│   ├── agent_garcomweb.py            # Agente coletor em tempo real (MySQL + ODBC -> Supabase)
+│   ├── config.env.example            # Modelo de configuração da máquina do restaurante
+│   ├── instalar_dependencias.bat     # Instala drivers pymysql e pyodbc na outra máquina
+│   ├── testar_conexao.bat            # Testa leitura do Garçom Web e conexão Supabase
+│   ├── iniciar_agente.bat            # Inicia sincronização contínua ao vivo
+│   └── README_OUTRA_MAQUINA.md       # Instruções de instalação no PC do restaurante
 └── scripts/
-    ├── exportar_dados_pbi.ps1    # Extrator DAX via ADOMD.NET (PowerShell)
-    ├── gerar_html_live.py        # Motor Multi-Tenant de injeção JSON (Python)
-    ├── pbi_cloud_api.py          # Conector Power BI Service REST API (OAuth2)
-    └── cloud_config.example.json # Modelo de configuração para a nuvem
+    ├── build_secure_webapp.py        # Gerador do Web App seguro sem dados embutidos
+    └── seed_supabase_demo.py         # Motor de carga inicial e simulador de PDV ao vivo
 ```
 
 ---
 
-## 🔮 Roteiro de Expansão (Próximas Fases)
-
-### Ativação da Opção 1 (Automação Nuvem)
-* Já implementada em `scripts/pbi_cloud_api.py` com suporte a OAuth2 RFC 8628 (Device Code).
-* Permite agendamentos em servidores locais ou GitHub Actions sem interface gráfica.
-
-### Ativação da Opção 3 (Dashboard Nativo)
-* Modelar uma página executiva "MESA Master" dentro do próprio `.pbix`.
-* Combinar as medidas de `Medidas Vendas`, `Medidas Caixa` e `Medidas DRE` em um layout executivo escuro equivalente ao padrão visual do HTML.
-
----
-
-*Desenvolvido para **Consultoria MESA** · Gestão Financeira e Inteligência para Hospitalidade.*
+*Desenvolvido para **Consultoria MESA** · Gestão Financeira e Inteligência em Tempo Real para Hospitalidade.*
